@@ -65,6 +65,41 @@ class Settings:
     # Database Configuration (for future database integration)
     DATABASE_URL: str = os.getenv("DATABASE_URL", "")
     
+    # NHS Scotland Open Data API Configuration
+    NHS_SCOTLAND_BASE_URL: str = "https://www.opendata.nhs.scot/api/3"
+    NHS_SCOTLAND_TIMEOUT_SECONDS: int = int(os.getenv("NHS_TIMEOUT", 30))
+    
+    # Cache Configuration
+    NHS_DATA_CACHE_TTL_SECONDS: int = int(os.getenv("NHS_CACHE_TTL", 3600))  # 1 hour default
+    
+    # LLM API Configuration
+    OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY", "")
+    OPENAI_ORGANIZATION: str = os.getenv("OPENAI_ORGANIZATION", "")
+    ANTHROPIC_API_KEY: str = os.getenv("ANTHROPIC_API_KEY", "")
+    
+    # LLM Settings
+    DEFAULT_LLM_PROVIDER: str = os.getenv("DEFAULT_LLM_PROVIDER", "openai")
+    LLM_TEMPERATURE: float = float(os.getenv("LLM_TEMPERATURE", 0.1))
+    LLM_MAX_TOKENS: int = int(os.getenv("LLM_MAX_TOKENS", 2000))
+    LLM_ENABLE_CACHING: bool = os.getenv("LLM_ENABLE_CACHING", "true").lower() == "true"
+    LLM_CACHE_TTL: int = int(os.getenv("LLM_CACHE_TTL", 3600))  # 1 hour
+    
+    # Worker Pool Configuration
+    LLM_CONCURRENCY: int = int(os.getenv("LLM_CONCURRENCY", 4))
+    LLM_QUEUE_SIZE: int = int(os.getenv("LLM_QUEUE_SIZE", 100))
+    LLM_JOB_TIMEOUT: float = float(os.getenv("LLM_JOB_TIMEOUT", 300.0))  # 5 minutes
+    LLM_MAX_RETRIES: int = int(os.getenv("LLM_MAX_RETRIES", 3))
+    
+    # Retry Configuration
+    LLM_RETRY_BASE_DELAY: float = float(os.getenv("LLM_RETRY_BASE_DELAY", 1.0))
+    LLM_RETRY_MAX_DELAY: float = float(os.getenv("LLM_RETRY_MAX_DELAY", 60.0))
+    
+    # Rate Limiting Configuration
+    OPENAI_RATE_LIMIT_CAPACITY: int = int(os.getenv("OPENAI_RATE_LIMIT_CAPACITY", 60))
+    OPENAI_RATE_LIMIT_REFILL: float = float(os.getenv("OPENAI_RATE_LIMIT_REFILL", 1.0))
+    ANTHROPIC_RATE_LIMIT_CAPACITY: int = int(os.getenv("ANTHROPIC_RATE_LIMIT_CAPACITY", 50))
+    ANTHROPIC_RATE_LIMIT_REFILL: float = float(os.getenv("ANTHROPIC_RATE_LIMIT_REFILL", 0.8))
+    
     @property
     def is_production(self) -> bool:
         """Check if running in production environment"""

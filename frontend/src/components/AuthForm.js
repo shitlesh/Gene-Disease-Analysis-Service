@@ -1,15 +1,17 @@
 import React, { useState, memo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { setCredentials, selectIsAuthenticated } from '../features/auth/authSlice';
+import { setCredentials, clearCredentials, selectIsAuthenticated, selectUsername } from '../features/auth/authSlice';
 
 /**
  * Authentication form component for capturing user credentials
  * Handles username and API key input with form validation
+ * Shows welcome message when authenticated with logout option
  * Memoized to prevent unnecessary re-renders
  */
 const AuthForm = memo(() => {
   const dispatch = useDispatch();
   const isAuthenticated = useSelector(selectIsAuthenticated);
+  const username = useSelector(selectUsername);
   
   const [formData, setFormData] = useState({
     username: '',
@@ -72,9 +74,34 @@ const AuthForm = memo(() => {
     }
   };
 
-  // Don't render if already authenticated
+  /**
+   * Handles logout - clears credentials and resets form
+   */
+  const handleLogout = () => {
+    dispatch(clearCredentials());
+    setFormData({
+      username: '',
+      apiKey: '',
+    });
+    setErrors({});
+  };
+
+  // Show welcome message if authenticated, otherwise show login form
   if (isAuthenticated) {
-    return null;
+    return (
+      <div className="auth-form authenticated">
+        <div className="welcome-message">
+          <h2>Hello! {username}</h2>
+          <p>Welcome to Gene Disease Analysis Tool</p>
+        </div>
+        
+        <div className="auth-actions">
+          <button onClick={handleLogout} className="logout-btn">
+            Login with Different User
+          </button>
+        </div>
+      </div>
+    );
   }
 
   return (

@@ -13,6 +13,8 @@ from contextlib import asynccontextmanager
 from .config import settings
 from .routers import session, analysis
 from .storage.memory_store import storage
+from .services.worker_pool import get_worker_pool, shutdown_worker_pool
+from .db.session import setup_database, close_database, check_database_health, get_database_stats
 
 
 # Configure logging
@@ -31,6 +33,25 @@ async def lifespan(app: FastAPI):
     logger.info(f"Debug mode: {settings.DEBUG}")
     logger.info(f"Allowed origins: {settings.ALLOWED_ORIGINS}")
     
+    # Initialize database
+    logger.info("Initializing database...")
+    try:
+        await setup_database()
+        db_health = await check_database_health()
+        logger.info(f"Database initialized: {db_health['status']}")
+    except Exception as e:
+        logger.error(f"Failed to initialize database: {e}")
+        raise
+    
+    # Initialize worker pool
+    logger.info("Initializing worker pool...")
+    try:
+        worker_pool = await get_worker_pool()
+        logger.info(f"Worker pool started with {worker_pool.concurrency_limit} workers")
+    except Exception as e:
+        logger.error(f"Failed to initialize worker pool: {e}")
+        raise
+    
     # Start background cleanup task
     cleanup_task = asyncio.create_task(periodic_cleanup())
     
@@ -38,6 +59,24 @@ async def lifespan(app: FastAPI):
     
     # Shutdown tasks
     logger.info("Shutting down Gene-Disease Analysis API")
+    
+    # Stop worker pool
+    logger.info("Shutting down worker pool...")
+    try:
+        await shutdown_worker_pool()
+        logger.info("Worker pool shutdown completed")
+    except Exception as e:
+        logger.error(f"Error shutting down worker pool: {e}")
+    
+    # Close database
+    logger.info("Closing database...")
+    try:
+        await close_database()
+        logger.info("Database closed successfully")
+    except Exception as e:
+        logger.error(f"Error closing database: {e}")
+    
+    # Cancel cleanup task
     cleanup_task.cancel()
     try:
         await cleanup_task
@@ -95,13 +134,38 @@ async def health_check():
     Returns:
         dict: Application status and basic statistics
     """
+    try:
+        # Get worker pool status if available
+        from .services.worker_pool import get_pool_status
+        worker_status = await get_pool_status()
+        worker_health = "healthy" if worker_status.get("running") else "unhealthy"
+    except Exception:
+        worker_health = "unknown"
+        worker_status = {"error": "Worker pool status unavailable"}
+    
+    # Check database health
+    try:
+        db_health = await check_database_health()
+        db_stats = await get_database_stats()
+    except Exception as e:
+        db_health = {"status": "unhealthy", "error": str(e)}
+        db_stats = {"error": "Database stats unavailable"}
+    
     return {
         "status": "healthy",
         "app_name": settings.APP_NAME,
         "version": settings.APP_VERSION,
         "debug": settings.DEBUG,
         "total_sessions": storage.get_total_sessions(),
-        "total_analyses": storage.get_total_analyses()
+        "total_analyses": storage.get_total_analyses(),
+        "database": {
+            "status": db_health.get("status", "unknown"),
+            "stats": db_stats
+        },
+        "worker_pool": {
+            "status": worker_health,
+            "details": worker_status
+        }
     }
 
 
@@ -130,6 +194,38 @@ async def root():
                 "get": "GET /analysis/{analysis_id}",
                 "stream": "GET /analysis/stream/{analysis_id}",
                 "history": "GET /analysis/history/{session_id}"
+            },
+            "nhs_scotland": {
+                "info": "GET /nhs/",
+                "datasets": "GET /nhs/datasets",
+                "gene_search": "GET /nhs/gene/{gene_name}",
+                "disease_search": "GET /nhs/disease/{disease_name}"
+            },
+            "llm_analysis": {
+                "analyze": "POST /llm/analyze",
+                "providers": "GET /llm/providers",
+                "models": "GET /llm/models/{provider}",
+                "cache_stats": "GET /llm/cache/stats"
+            },
+            "worker_management": {
+                "info": "GET /workers/",
+                "submit_job": "POST /workers/jobs",
+                "job_status": "GET /workers/jobs/{job_id}",
+                "cancel_job": "DELETE /workers/jobs/{job_id}",
+                "pool_status": "GET /workers/pool",
+                "statistics": "GET /workers/stats",
+                "health": "GET /workers/health"
+            },
+            "persistent_analysis": {
+                "create_session": "POST /api/v1/persistent/sessions",
+                "get_session": "GET /api/v1/persistent/sessions/{session_id}",
+                "create_analysis": "POST /api/v1/persistent/analyses",
+                "get_analysis": "GET /api/v1/persistent/analyses/{analysis_id}",
+                "analysis_history": "GET /api/v1/persistent/sessions/{session_id}/analyses",
+                "search_analyses": "GET /api/v1/persistent/analyses/search",
+                "session_stats": "GET /api/v1/persistent/sessions/{session_id}/stats",
+                "global_stats": "GET /api/v1/persistent/stats/global",
+                "health": "GET /api/v1/persistent/health"
             }
         }
     }
@@ -138,6 +234,22 @@ async def root():
 # Include routers
 app.include_router(session.router)
 app.include_router(analysis.router)
+
+# Import NHS Scotland router
+from .routers import nhs_scotland
+app.include_router(nhs_scotland.router)
+
+# Import LLM Analysis router
+from .routers import llm_analysis
+app.include_router(llm_analysis.router)
+
+# Import Worker Management router
+from .routers import worker_management
+app.include_router(worker_management.router)
+
+# Import Persistent Analysis router
+from .routers import analysis_persistent
+app.include_router(analysis_persistent.router)
 
 
 # Global exception handler

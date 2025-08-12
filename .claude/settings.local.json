@@ -16,7 +16,20 @@
       "Bash(poetry --version)",
       "Bash(poetry install:*)",
       "Bash(pkill:*)",
-      "Bash(curl:*)"
+      "Bash(curl:*)",
+      "Bash(cat:*)",
+      "WebFetch(domain:www.opendata.nhs.scot)",
+      "Bash(poetry add:*)",
+      "Bash(poetry lock:*)",
+      "Bash(poetry run pytest:*)",
+      "Bash(poetry run python:*)",
+      "Bash(find:*)",
+      "Bash(grep:*)",
+      "Bash(sed:*)",
+      "Bash(true)",
+      "Bash(rg:*)",
+      "Bash(python -m pytest app/tests/test_worker_pool.py -v)",
+      "Bash(timeout:*)"
     ],
     "deny": []
   }
