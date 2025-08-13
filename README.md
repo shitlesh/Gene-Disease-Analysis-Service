@@ -85,4 +85,4 @@ gene-disease-analysis/
 
 ## License
 
-This project is for research and educational use only.
+Created By Shitlesh Bakshi - August, 2025.
