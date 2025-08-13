@@ -1,7 +1,5 @@
 import axios from 'axios';
 
-// Base API configuration
-
 const API_BASE_URL = 'http://localhost:8000';
 
 const api = axios.create({
@@ -12,7 +10,6 @@ const api = axios.create({
   },
 });
 
-// Response interceptor for error handling
 api.interceptors.response.use(
   (response) => response,
   (error) => {
@@ -20,45 +17,39 @@ api.interceptors.response.use(
     return Promise.reject(error);
   }
 );
-
-// Core API service functions - simplified for requirements
 export const apiService = {
-  // Health check
   async healthCheck() {
     const response = await api.get('/health');
     return response.data;
   },
 
-  // Session management - simplified to username + API key
   async createSession(userData) {
-    const response = await api.post('/session/', userData);
+    const response = await api.post('/api/v1/session', userData);
     return response.data;
   },
 
   async getSession(sessionId) {
-    const response = await api.get(`/session/${sessionId}`);
+    const response = await api.get(`/api/v1/session/${sessionId}`);
     return response.data;
   },
 
-  // Gene-Disease Analysis - core functionality
   async analyzeGeneDisease(analysisData) {
-    const response = await api.post('/analysis/', analysisData);
+    const response = await api.post('/api/v1/analysis', analysisData);
     return response.data;
   },
 
   async getAnalysis(analysisId) {
-    const response = await api.get(`/analysis/${analysisId}`);
+    const response = await api.get(`/api/v1/analysis/${analysisId}`);
     return response.data;
   },
 
   async getAnalysisHistory(sessionId) {
-    const response = await api.get(`/analysis/history/${sessionId}`);
+    const response = await api.get(`/api/v1/history/${sessionId}`);
     return response.data;
   },
 
-  // Real-time updates using Server-Sent Events
   subscribeToAnalysis(analysisId, onUpdate, onError) {
-    const streamUrl = `${API_BASE_URL}/analysis/stream/${analysisId}`;
+    const streamUrl = `${API_BASE_URL}/api/v1/stream/${analysisId}`;
     const eventSource = new EventSource(streamUrl);
 
     eventSource.onmessage = (event) => {
