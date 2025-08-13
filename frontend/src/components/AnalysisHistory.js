@@ -1,6 +1,7 @@
-import React, { memo, useState } from 'react';
-import { useSelector } from 'react-redux';
-import { selectAnalysisHistory } from '../features/analysis/analysisSlice';
+import React, { memo, useState, useEffect } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
+import { selectAnalysisHistory, loadAnalysisHistory } from '../features/analysis/analysisSlice';
+import { selectSessionId, selectIsAuthenticated } from '../features/auth/authSlice';
 
 /**
  * Individual analysis history item component
@@ -21,6 +22,9 @@ const HistoryItem = memo(({ analysis }) => {
    * Truncates result text for preview
    */
   const getResultPreview = (result) => {
+    if (!result || typeof result !== 'string') {
+      return 'No result available';
+    }
     return result.length > 100 ? result.substring(0, 100) + '...' : result;
   };
 
@@ -57,7 +61,22 @@ HistoryItem.displayName = 'HistoryItem';
  * Optimized with memoization to prevent unnecessary re-renders
  */
 const AnalysisHistory = memo(() => {
-  const history = useSelector(selectAnalysisHistory);
+  const dispatch = useDispatch();
+  const history = useSelector(selectAnalysisHistory) || [];
+  const sessionId = useSelector(selectSessionId);
+  const isAuthenticated = useSelector(selectIsAuthenticated);
+
+  // Load analysis history when authenticated
+  useEffect(() => {
+    if (isAuthenticated && sessionId) {
+      dispatch(loadAnalysisHistory({ sessionId }));
+    }
+  }, [dispatch, isAuthenticated, sessionId]);
+
+  // Don't render if not authenticated
+  if (!isAuthenticated) {
+    return null;
+  }
 
   /**
    * Renders empty state when no history exists

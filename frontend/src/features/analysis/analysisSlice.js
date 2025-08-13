@@ -1,19 +1,54 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import { mockAnalyzeGeneDisease } from '../../services/mockApi';
+import { apiService } from '../../services/api';
 
 /**
  * Async thunk for performing gene-disease analysis
- * Simulates streaming results by updating progress incrementally
+ * Uses real API with Server-Sent Events for real-time updates
  */
 export const analyzeGeneDisease = createAsyncThunk(
   'analysis/analyzeGeneDisease',
-  async ({ gene, disease, apiKey }, { dispatch }) => {
-    // Start the mock analysis which will dispatch streaming updates
-    const result = await mockAnalyzeGeneDisease(gene, disease, apiKey, (progress) => {
-      // Dispatch streaming updates as the analysis progresses
-      dispatch(updateAnalysisProgress(progress));
+  async ({ gene, disease, apiKey, sessionId }, { dispatch }) => {
+    // Start the analysis via API
+    const analysis = await apiService.analyzeGeneDisease({
+      gene,
+      disease,
+      session_id: sessionId,
+      api_key: apiKey
     });
-    return result;
+
+    // Subscribe to real-time updates
+    const eventSource = apiService.subscribeToAnalysis(
+      analysis.id,
+      (data) => {
+        if (data.progress) {
+          dispatch(updateAnalysisProgress(data.progress));
+        }
+      },
+      (error) => {
+        console.error('Analysis stream error:', error);
+      }
+    );
+
+    // Return the analysis result
+    return {
+      id: analysis.id,
+      gene,
+      disease,
+      eventSource, // Store for cleanup
+      completedAt: new Date().toISOString()
+    };
+  }
+);
+
+/**
+ * Async thunk for loading analysis history
+ */
+export const loadAnalysisHistory = createAsyncThunk(
+  'analysis/loadHistory',
+  async ({ sessionId }) => {
+    const response = await apiService.getAnalysisHistory(sessionId);
+    // Extract the analyses array from the response object
+    return response.analyses || [];
   }
 );
 
@@ -96,6 +131,11 @@ const analysisSlice = createSlice({
         state.currentAnalysis.isLoading = false;
         state.currentAnalysis.error = action.error.message || 'Analysis failed';
         state.currentAnalysis.progress = '';
+      })
+      
+      // Handle loading analysis history
+      .addCase(loadAnalysisHistory.fulfilled, (state, action) => {
+        state.history = Array.isArray(action.payload) ? action.payload : [];
       });
   },
 });

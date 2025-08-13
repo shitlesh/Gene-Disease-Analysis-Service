@@ -1,6 +1,13 @@
 import React, { useState, memo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { setCredentials, clearCredentials, selectIsAuthenticated, selectUsername } from '../features/auth/authSlice';
+import { 
+  createSession, 
+  clearCredentials, 
+  selectIsAuthenticated, 
+  selectUsername, 
+  selectAuthLoading, 
+  selectAuthError 
+} from '../features/auth/authSlice';
 
 /**
  * Authentication form component for capturing user credentials
@@ -12,6 +19,8 @@ const AuthForm = memo(() => {
   const dispatch = useDispatch();
   const isAuthenticated = useSelector(selectIsAuthenticated);
   const username = useSelector(selectUsername);
+  const isLoading = useSelector(selectAuthLoading);
+  const authError = useSelector(selectAuthError);
   
   const [formData, setFormData] = useState({
     username: '',
@@ -61,13 +70,13 @@ const AuthForm = memo(() => {
   };
 
   /**
-   * Handles form submission and stores credentials in Redux
+   * Handles form submission and creates session with backend
    */
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     
     if (validateForm()) {
-      dispatch(setCredentials({
+      dispatch(createSession({
         username: formData.username.trim(),
         apiKey: formData.apiKey.trim(),
       }));
@@ -110,6 +119,12 @@ const AuthForm = memo(() => {
       <p>Please enter your credentials to access the gene analysis tool.</p>
       
       <form onSubmit={handleSubmit}>
+        {authError && (
+          <div className="error-message global-error">
+            Failed to create session: {authError}
+          </div>
+        )}
+        
         <div className="form-group">
           <label htmlFor="username">Username:</label>
           <input
@@ -120,6 +135,7 @@ const AuthForm = memo(() => {
             onChange={handleInputChange}
             placeholder="Enter your username"
             className={errors.username ? 'error' : ''}
+            disabled={isLoading}
           />
           {errors.username && <span className="error-message">{errors.username}</span>}
         </div>
@@ -134,12 +150,13 @@ const AuthForm = memo(() => {
             onChange={handleInputChange}
             placeholder="sk-... or anthropic-..."
             className={errors.apiKey ? 'error' : ''}
+            disabled={isLoading}
           />
           {errors.apiKey && <span className="error-message">{errors.apiKey}</span>}
         </div>
 
-        <button type="submit" className="submit-btn">
-          Authenticate
+        <button type="submit" className="submit-btn" disabled={isLoading}>
+          {isLoading ? 'Creating Session...' : 'Authenticate'}
         </button>
       </form>
     </div>

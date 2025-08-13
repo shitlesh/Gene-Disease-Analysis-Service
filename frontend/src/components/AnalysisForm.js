@@ -1,7 +1,7 @@
 import React, { useState, memo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { analyzeGeneDisease } from '../features/analysis/analysisSlice';
-import { selectApiKey, selectIsAuthenticated } from '../features/auth/authSlice';
+import { selectApiKey, selectIsAuthenticated, selectSessionId } from '../features/auth/authSlice';
 import { selectIsAnalyzing } from '../features/analysis/analysisSlice';
 
 /**
@@ -12,6 +12,7 @@ import { selectIsAnalyzing } from '../features/analysis/analysisSlice';
 const AnalysisForm = memo(() => {
   const dispatch = useDispatch();
   const apiKey = useSelector(selectApiKey);
+  const sessionId = useSelector(selectSessionId);
   const isAuthenticated = useSelector(selectIsAuthenticated);
   const isAnalyzing = useSelector(selectIsAnalyzing);
   
@@ -81,6 +82,7 @@ const AnalysisForm = memo(() => {
         gene: formData.gene.trim(),
         disease: formData.disease.trim(),
         apiKey,
+        sessionId,
       }));
     }
   };

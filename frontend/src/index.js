@@ -1,14 +1,20 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
+import { Provider } from 'react-redux';
+import { store } from './store';
 import App from './App';
 
-/**
- * Application entry point
- * Renders the main App component with React 18's createRoot API
- */
-const root = ReactDOM.createRoot(document.getElementById('root'));
+console.log('🔍 Testing full App with Redux');
+console.log('🔍 Store:', store);
+console.log('🔍 Initial state:', store.getState());
+
+const rootElement = document.getElementById('root');
+const root = ReactDOM.createRoot(rootElement);
+
 root.render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>
+    <React.StrictMode>
+        <Provider store={store}>
+            <App />
+        </Provider>
+    </React.StrictMode>
 );
