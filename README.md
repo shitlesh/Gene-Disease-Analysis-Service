@@ -76,7 +76,7 @@ gene-disease-analysis/
 ### Key Technologies
 - **Backend**: FastAPI, Python 3.11+, Poetry
 - **Frontend**: React 18, Redux Toolkit, Webpack
-- **APIs**: OpenAI GPT, Anthropic Claude, NCBI Entrez
+- **APIs**: OpenAI GPT, Anthropic Claude
 
 ## Health Checks
 
